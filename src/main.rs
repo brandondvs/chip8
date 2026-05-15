@@ -1,3 +1,5 @@
+use chip8::core::emulator;
+
 use std::time::Duration;
 
 use sdl2::event::Event;
@@ -10,17 +12,9 @@ const WIDTH: u32 = 64;
 const HEIGHT: u32 = 32;
 const SCREEN_SCALE_FACTOR: u32 = 10;
 
-#[derive(PartialEq)]
-enum EmulatorState {
-    Ready,
-    Running,
-    Exiting,
-}
-
 fn initialize_sdl() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
-
     let window = video_subsystem
         .window(
             "chip-8 emulator",
@@ -39,9 +33,9 @@ fn initialize_sdl() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut i = 0;
 
-    let mut emulator_state = EmulatorState::Ready;
-    while emulator_state != EmulatorState::Exiting {
-        emulator_state = EmulatorState::Running;
+    let mut emulator_state = emulator::State::Ready;
+    while emulator_state != emulator::State::Exiting {
+        emulator_state = emulator::State::Running;
 
         i = (i + 1) % 255;
         canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
@@ -55,7 +49,7 @@ fn initialize_sdl() {
                     ..
                 } => {
                     println!("state_changed=exiting...");
-                    emulator_state = EmulatorState::Exiting
+                    emulator_state = emulator::State::Exiting
                 }
                 _ => {}
             }
