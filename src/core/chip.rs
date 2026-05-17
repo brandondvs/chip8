@@ -2,6 +2,9 @@ use crate::core::registers::{self, Register};
 
 const MEMORY_SIZE: usize = 4096;
 
+const DISPLAY_WIDTH: usize = 64;
+const DISPLAY_HEIGHT: usize = 32;
+
 // ROMs are loaded in at this memory location.
 const START_ROM_ADDRESS: u16 = 0x200;
 
@@ -35,6 +38,7 @@ const FONT_SET: [u8; 80] = [
 pub struct Chip8 {
     opcode: u16,
     memory: [u8; MEMORY_SIZE],
+    display: [u8; DISPLAY_WIDTH * DISPLAY_HEIGHT],
     registers: [u8; registers::TOTAL],
 
     pc: u16,
@@ -53,6 +57,7 @@ impl Chip8 {
         let mut chip = Chip8 {
             opcode: 0x0000,
             memory: [0x00; MEMORY_SIZE],
+            display: [0x00; DISPLAY_WIDTH * DISPLAY_HEIGHT],
             registers: [0x00; registers::TOTAL],
             pc: START_ROM_ADDRESS,
             addr_i: 0x00,
@@ -80,6 +85,7 @@ impl Chip8 {
     pub fn reset(&mut self) {
         self.opcode = 0x00;
         self.memory = [0x00; MEMORY_SIZE];
+        self.display = [0x00; DISPLAY_WIDTH * DISPLAY_HEIGHT];
         self.registers = [0x00; registers::TOTAL];
         self.pc = START_ROM_ADDRESS;
         self.addr_i = 0x00;
@@ -92,9 +98,7 @@ impl Chip8 {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::chip::{
-        Chip8, FONT_SET, FONT_START_ADDR, MEMORY_SIZE, STACK_SIZE, START_ROM_ADDRESS,
-    };
+    use crate::core::chip::*;
     use crate::core::registers::Register;
 
     #[test]
@@ -134,5 +138,11 @@ mod tests {
         for (i, &byte) in FONT_SET.iter().enumerate() {
             assert_eq!(byte, chip.memory[FONT_START_ADDR + i])
         }
+    }
+
+    #[test]
+    fn display_memory_size() {
+        let chip = Chip8::init();
+        assert_eq!(chip.display.len(), DISPLAY_WIDTH * DISPLAY_HEIGHT)
     }
 }
