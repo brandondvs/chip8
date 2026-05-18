@@ -1,4 +1,5 @@
-use crate::core::registers::{self, Register};
+use crate::core::opcode::OpCode;
+use crate::core::registers::{self};
 
 const MEMORY_SIZE: usize = 4096;
 
@@ -6,11 +7,11 @@ const DISPLAY_WIDTH: usize = 64;
 const DISPLAY_HEIGHT: usize = 32;
 
 // ROMs are loaded in at this memory location.
-const START_ROM_ADDRESS: u16 = 0x200;
+const ROM_START_ADDRESS: u16 = 0x200;
 
 // ROMs should not go past this memory range since the last 352 bytes
 // are reserved for "variables and display refresh".
-const END_ROM_ADDRESS: u16 = 0xE8F;
+const ROM_END_ADDRESS: u16 = 0xE8F;
 
 const STACK_SIZE: usize = 12;
 
@@ -36,7 +37,6 @@ const FONT_SET: [u8; 80] = [
 ];
 
 pub struct Chip8 {
-    opcode: u16,
     memory: [u8; MEMORY_SIZE],
     display: [u8; DISPLAY_WIDTH * DISPLAY_HEIGHT],
     registers: [u8; registers::TOTAL],
@@ -55,11 +55,10 @@ pub struct Chip8 {
 impl Chip8 {
     pub fn init() -> Self {
         let mut chip = Chip8 {
-            opcode: 0x0000,
             memory: [0x00; MEMORY_SIZE],
             display: [0x00; DISPLAY_WIDTH * DISPLAY_HEIGHT],
             registers: [0x00; registers::TOTAL],
-            pc: START_ROM_ADDRESS,
+            pc: ROM_START_ADDRESS,
             addr_i: 0x00,
             stack: [0x00; STACK_SIZE],
             stack_size: 0,
@@ -70,24 +69,86 @@ impl Chip8 {
         chip
     }
 
+    pub fn load_rom(&mut self, data: Vec<u8>) -> Result<usize, String> {
+        let memory_limit = (ROM_END_ADDRESS - ROM_START_ADDRESS) as usize;
+        if data.len() > memory_limit {
+            return Err(format!("ROM exceeds the memory limit ({})", memory_limit));
+        }
+
+        for (i, &byte) in data.iter().enumerate() {
+            self.memory[ROM_START_ADDRESS as usize + i] = byte
+        }
+
+        Ok(data.len())
+    }
+
+    fn fetch(&mut self) {
+        let pc_idx = self.pc as usize;
+        let instruction: u16 =
+            ((self.memory[pc_idx] as u16) << 8) | (self.memory[pc_idx + 1] as u16);
+
+        self.pc += 2;
+
+        self.decode(instruction);
+    }
+
+    fn decode(&mut self, instruction: u16) {
+        let opcode = OpCode::new(instruction);
+
+        println!(
+            "(memory location: 0x{:X}) OpCode: category = 0x{:X} {:X} {:X} {:X}",
+            self.pc - 2,
+            opcode.category,
+            opcode.x,
+            opcode.y,
+            opcode.n
+        );
+
+        self.execute(opcode);
+    }
+
+    fn execute(&mut self, opcode: OpCode) {
+        match opcode.category {
+            0x0 => match opcode.nnn {
+                0x0E0 => {
+                    println!("clear the screen!")
+                }
+                _ => {
+                    println!("Unknown opcode: 0x{:X}{:X}", opcode.category, opcode.nnn)
+                }
+            },
+            // Jump to address
+            0x1 => {
+                let addr = opcode.nnn;
+                if addr as usize > MEMORY_SIZE {
+                    println!(
+                        "Jumping to address outside memory size ({}): 0x{:X}",
+                        MEMORY_SIZE, addr,
+                    );
+                    return;
+                }
+                println!("Setting program counter to address: 0x{:X}", addr);
+                self.pc = addr
+            }
+            _ => {
+                println!("unable to execute instruction: 0x{:X}", opcode.category)
+            }
+        }
+    }
+
+    pub fn execute_cycle(&mut self) {
+        self.fetch()
+    }
+
     fn load_font(&mut self) {
         self.memory[FONT_START_ADDR..(FONT_START_ADDR + FONT_SET.len())].copy_from_slice(&FONT_SET);
     }
 
-    fn store_register(&mut self, reg: Register, value: u8) {
-        self.registers[reg as usize] = value;
-    }
-
-    fn get_register(&mut self, reg: Register) -> u8 {
-        self.registers[reg as usize]
-    }
-
     pub fn reset(&mut self) {
-        self.opcode = 0x00;
         self.memory = [0x00; MEMORY_SIZE];
         self.display = [0x00; DISPLAY_WIDTH * DISPLAY_HEIGHT];
         self.registers = [0x00; registers::TOTAL];
-        self.pc = START_ROM_ADDRESS;
+        self.pc = ROM_START_ADDRESS;
         self.addr_i = 0x00;
         self.stack = [0x00; STACK_SIZE];
         self.stack_size = 0;
@@ -99,16 +160,6 @@ impl Chip8 {
 #[cfg(test)]
 mod tests {
     use crate::core::chip::*;
-    use crate::core::registers::Register;
-
-    #[test]
-    fn basic_memory() {
-        let mut chip = Chip8::init();
-        chip.store_register(Register::V0, 0x10);
-        assert_eq!(chip.get_register(Register::V0), 0x10);
-        chip.reset();
-        assert_eq!(chip.get_register(Register::V0), 0x00);
-    }
 
     #[test]
     fn memory_size() {
@@ -126,10 +177,10 @@ mod tests {
     #[test]
     fn program_counter_start_reset() {
         let mut chip = Chip8::init();
-        assert_eq!(chip.pc, START_ROM_ADDRESS);
+        assert_eq!(chip.pc, ROM_START_ADDRESS);
         chip.pc += 2;
         chip.reset();
-        assert_eq!(chip.pc, START_ROM_ADDRESS);
+        assert_eq!(chip.pc, ROM_START_ADDRESS);
     }
 
     #[test]

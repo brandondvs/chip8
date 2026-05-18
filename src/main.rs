@@ -1,5 +1,8 @@
+use chip8::core::chip::Chip8;
 use chip8::core::emulator;
 
+use std::fs;
+use std::io;
 use std::time::Duration;
 
 use sdl2::event::Event;
@@ -56,14 +59,36 @@ fn initialize_sdl() {
         }
 
         canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 
     println!("Emulator exited...")
 }
 
+fn read_rom_file(filename: &str) -> io::Result<Vec<u8>> {
+    let data = fs::read(filename)?;
+    Ok(data)
+}
+
 fn main() {
     println!("Starting emulator!");
 
-    initialize_sdl();
+    let rom_path = "test_roms/2-ibm-logo.ch8";
+    let rom_data = match read_rom_file(rom_path) {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("Could not read '{}' ({})", rom_path, err);
+            std::process::exit(1)
+        }
+    };
+
+    let mut chip = Chip8::init();
+    let _ = chip.load_rom(rom_data);
+
+    loop {
+        chip.execute_cycle();
+        std::thread::sleep(Duration::from_millis(500))
+    }
+
+    //initialize_sdl();
 }
