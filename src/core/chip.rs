@@ -1,5 +1,5 @@
 use crate::core::opcode::OpCode;
-use crate::core::registers::{self};
+use crate::core::registers::{self, InvalidRegister};
 
 const MEMORY_SIZE: usize = 4096;
 
@@ -76,9 +76,12 @@ impl Chip8 {
         }
 
         for (i, &byte) in data.iter().enumerate() {
-            self.memory[ROM_START_ADDRESS as usize + i] = byte
+            let idx = ROM_START_ADDRESS as usize + i;
+            self.memory[idx] = byte;
+            println!("0x{:X}: 0x{:X}", idx, byte);
         }
 
+        println!("==== END OF ROM ====");
         Ok(data.len())
     }
 
@@ -129,6 +132,60 @@ impl Chip8 {
                 }
                 println!("Setting program counter to address: 0x{:X}", addr);
                 self.pc = addr
+            }
+
+            // Set the index register to the immediate address
+            0xA => {
+                let addr_i = opcode.nnn;
+                if addr_i as usize > MEMORY_SIZE {
+                    println!(
+                        "Attempted to set index address to a memory location outside the bounds. 0x{:X}",
+                        addr_i
+                    );
+                    return;
+                }
+                println!("Setting addr_i = 0x{:X}", addr_i);
+                self.addr_i = addr_i;
+            }
+
+            // Load immediate value into register
+            0x6 => {
+                let reg = match registers::Register::try_from(opcode.x) {
+                    Ok(reg) => reg as usize,
+                    Err(err) => {
+                        println!("Invalid register({:?}): 0x{:X}", err, opcode.x);
+                        return;
+                    }
+                };
+
+                let value = opcode.nn;
+
+                println!("Setting register 0x{:X} = 0x{:X}", reg, value);
+                self.registers[reg] = value;
+            }
+
+            // Add immediate value to register
+            0x7 => {
+                let reg = match registers::Register::try_from(opcode.x) {
+                    Ok(reg) => reg as usize,
+                    Err(err) => {
+                        println!("Invalid register({:?}): 0x{:X}", err, opcode.x);
+                        return;
+                    }
+                };
+                let value = opcode.nn;
+
+                println!(
+                    "Register: 0x{:X} = 0x{:X} adding 0x{:X}",
+                    reg, self.registers[reg], value,
+                );
+                self.registers[reg as usize] += value;
+                println!("Register 0x{:X} updated = 0x{:X}", reg, self.registers[reg])
+            }
+
+            // Draw to the display memory
+            0xD => {
+                println!("Draw command:")
             }
             _ => {
                 println!("unable to execute instruction: 0x{:X}", opcode.category)
