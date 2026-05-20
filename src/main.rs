@@ -87,7 +87,7 @@ fn main() {
 
     loop {
         chip.execute_cycle();
-        std::thread::sleep(Duration::from_millis(500))
+        std::thread::sleep(Duration::from_millis(100))
     }
 
     //initialize_sdl();

@@ -1,5 +1,5 @@
 use crate::core::opcode::OpCode;
-use crate::core::registers::{self, InvalidRegister};
+use crate::core::registers::{self};
 
 const MEMORY_SIZE: usize = 4096;
 
@@ -185,11 +185,61 @@ impl Chip8 {
 
             // Draw to the display memory
             0xD => {
-                println!("Draw command:")
+                let x = self.registers[registers::Register::try_from(opcode.x).unwrap() as usize];
+                let y = self.registers[registers::Register::try_from(opcode.y).unwrap() as usize];
+                let rows = opcode.n;
+
+                self.draw_sprite(x as usize, y as usize, rows as usize, self.addr_i as usize);
             }
             _ => {
                 println!("unable to execute instruction: 0x{:X}", opcode.category)
             }
+        }
+    }
+
+    fn draw_sprite(&mut self, x: usize, y: usize, rows: usize, sprite_addr: usize) {
+        println!(
+            "X: {:?} | Y: {:?} | Rows: {} | Sprite addr: {}",
+            x, y, rows, sprite_addr
+        );
+
+        self.registers[registers::Register::VF as usize] = 0x00;
+
+        for row in 0..rows {
+            let sprite_byte = self.memory[sprite_addr + row as usize];
+            let current_y = (y + row) % DISPLAY_HEIGHT;
+
+            for col in 0..8 {
+                let sprite_pixel = (sprite_byte >> (7 - col)) & 0x01;
+
+                if sprite_pixel == 0x01 {
+                    let current_x = (x + col) % DISPLAY_WIDTH;
+                    let pixel_idx = current_y * DISPLAY_WIDTH + current_x;
+
+                    if self.display[pixel_idx] == 0x01 {
+                        self.registers[registers::Register::VF as usize] = 0x01;
+                    }
+
+                    self.display[pixel_idx] ^= 0x01;
+                }
+            }
+        }
+
+        self.debug_print_display();
+    }
+
+    fn debug_print_display(&self) {
+        for y in 0..DISPLAY_HEIGHT {
+            for x in 0..DISPLAY_WIDTH {
+                let pixel_idx = y * DISPLAY_WIDTH + x;
+
+                if self.display[pixel_idx] == 0x01 {
+                    print!("█");
+                } else {
+                    print!(".");
+                }
+            }
+            println!();
         }
     }
 

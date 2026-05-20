@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 pub const TOTAL: usize = 16;
 
 #[repr(usize)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Register {
     V0 = 0,
     V1 = 1,
