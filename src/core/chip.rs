@@ -3,8 +3,8 @@ use crate::core::registers::{self};
 
 const MEMORY_SIZE: usize = 4096;
 
-const DISPLAY_WIDTH: usize = 64;
-const DISPLAY_HEIGHT: usize = 32;
+pub const DISPLAY_WIDTH: usize = 64;
+pub const DISPLAY_HEIGHT: usize = 32;
 
 // ROMs are loaded in at this memory location.
 const ROM_START_ADDRESS: u16 = 0x200;
@@ -36,9 +36,11 @@ const FONT_SET: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
+type DisplayMemory = [u8; DISPLAY_WIDTH * DISPLAY_HEIGHT];
+
 pub struct Chip8 {
     memory: [u8; MEMORY_SIZE],
-    display: [u8; DISPLAY_WIDTH * DISPLAY_HEIGHT],
+    display: DisplayMemory,
     registers: [u8; registers::TOTAL],
 
     pc: u16,
@@ -245,6 +247,10 @@ impl Chip8 {
             }
             println!();
         }
+    }
+
+    pub fn get_display_memory(&self) -> DisplayMemory {
+        return self.display;
     }
 
     pub fn execute_cycle(&mut self) {
