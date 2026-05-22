@@ -70,6 +70,10 @@ impl Chip8 {
     }
 
     pub fn load_rom(&mut self, data: Vec<u8>) -> Result<usize, String> {
+        if data.len() == 0 {
+            return Err(format!("ROM contains zero bytes"));
+        }
+
         let memory_limit = (ROM_END_ADDRESS - ROM_START_ADDRESS) as usize;
         if data.len() > memory_limit {
             return Err(format!("ROM exceeds the memory limit ({})", memory_limit));
