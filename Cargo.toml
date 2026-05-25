@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 sdl2="0.38"
+config = "0.15.23"
+serde = { version = "1", features = ["derive"] }

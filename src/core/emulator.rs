@@ -2,6 +2,7 @@ use std::fs;
 use std::time::Duration;
 
 use crate::core::chip::{self, Chip8, DISPLAY_HEIGHT, DISPLAY_WIDTH};
+use crate::core::config::Config;
 use sdl2::Sdl;
 use sdl2::event::Event;
 use sdl2::{pixels::Color, render::WindowCanvas};
@@ -21,11 +22,18 @@ pub struct Emulator {
 }
 
 impl Emulator {
-    pub fn init(path: &str) -> Result<Self, String> {
-        let data = match fs::read(path) {
+    pub fn init(config: &Config) -> Result<Self, String> {
+        let rom_file = config.rom_file();
+        let data = match fs::read(rom_file) {
             Ok(data) => data,
             Err(err) => {
-                eprintln!("Unable to read rom, {err}: path: {path}");
+                let err_msg = if rom_file.is_empty() {
+                    "no rom file given"
+                } else {
+                    rom_file
+                };
+
+                eprintln!("Unable to read rom, {err}: path: {err_msg}");
                 Vec::new()
             }
         };
