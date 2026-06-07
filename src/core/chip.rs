@@ -185,7 +185,7 @@ impl Chip8 {
                     "Register: 0x{:X} = 0x{:X} adding 0x{:X}",
                     reg, self.registers[reg], value,
                 );
-                self.registers[reg as usize] += value;
+                self.registers[reg as usize] = self.registers[reg as usize].wrapping_add(value);
                 println!("Register 0x{:X} updated = 0x{:X}", reg, self.registers[reg])
             }
 
