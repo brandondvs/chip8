@@ -52,6 +52,8 @@ pub struct Chip8 {
 
     delay_timer: u8,
     sound_timer: u8,
+
+    skip_next_opcode: bool,
 }
 
 impl Chip8 {
@@ -66,6 +68,7 @@ impl Chip8 {
             stack_size: 0,
             delay_timer: 0x00,
             sound_timer: 0x00,
+            skip_next_opcode: false,
         };
         chip.load_font();
         chip
@@ -117,6 +120,11 @@ impl Chip8 {
     }
 
     fn execute(&mut self, opcode: OpCode) {
+        if self.skip_next_opcode {
+            self.skip_next_opcode = false;
+            return;
+        }
+
         match opcode.category {
             0x0 => match opcode.nnn {
                 0x0E0 => {
@@ -138,6 +146,14 @@ impl Chip8 {
                 }
                 println!("Setting program counter to address: 0x{:X}", addr);
                 self.pc = addr
+            }
+
+            // Skip the next opcode
+            0x3 => {
+                let reg_value = self.registers[opcode.x as usize];
+                if reg_value == opcode.nn {
+                    self.skip_next_opcode = true
+                }
             }
 
             // Set the index register to the immediate address
