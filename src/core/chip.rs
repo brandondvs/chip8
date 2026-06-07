@@ -130,6 +130,12 @@ impl Chip8 {
                 0x0E0 => {
                     println!("clear the screen!")
                 }
+                0x0EE => {
+                    if self.stack_size != 0 {
+                        self.stack_size -= 1;
+                    }
+                    self.pc = self.stack[self.stack_size as usize];
+                }
                 _ => {
                     println!("Unknown opcode: 0x{:X}{:X}", opcode.category, opcode.nnn)
                 }
@@ -144,7 +150,30 @@ impl Chip8 {
                     );
                     return;
                 }
-                println!("Setting program counter to address: 0x{:X}", addr);
+                println!(
+                    "(goto jump) Setting program counter to address: 0x{:X}",
+                    addr
+                );
+                self.pc = addr
+            }
+
+            0x2 => {
+                let addr = opcode.nnn;
+
+                if addr as usize > MEMORY_SIZE {
+                    println!(
+                        "Jumping to address outside memory size ({}): 0x{:X}",
+                        MEMORY_SIZE, addr,
+                    );
+                    return;
+                }
+                println!(
+                    "(subroutine) Setting program counter to address: 0x{:X}",
+                    addr
+                );
+
+                self.stack[self.stack_size as usize] = self.pc;
+                self.stack_size += 1;
                 self.pc = addr
             }
 
