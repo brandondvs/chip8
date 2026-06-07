@@ -222,6 +222,14 @@ impl Chip8 {
                 println!("Register 0x{:X} updated = 0x{:X}", reg, self.registers[reg])
             }
 
+            0x9 => {
+                let reg_x_value = self.registers[opcode.x as usize];
+                let reg_y_value = self.registers[opcode.y as usize];
+                if reg_x_value != reg_y_value {
+                    self.skip_next_opcode = true
+                }
+            }
+
             // Draw to the display memory
             0xD => {
                 let x = self.registers[registers::Register::try_from(opcode.x).unwrap() as usize];
