@@ -1,5 +1,7 @@
 # Chip-8 Emulator
 
+<img width="752" height="784" alt="ibm_logo" src="https://github.com/user-attachments/assets/8ba51f29-20c3-4d2c-998a-f4db10742b15" />
+
 ## Development
 
 Development instructions for running the emulator locally
