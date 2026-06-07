@@ -148,10 +148,27 @@ impl Chip8 {
                 self.pc = addr
             }
 
-            // Skip the next opcode
+            // Skip the opcode if the register value is equal to the byte stored in the instruction
             0x3 => {
                 let reg_value = self.registers[opcode.x as usize];
                 if reg_value == opcode.nn {
+                    self.skip_next_opcode = true
+                }
+            }
+
+            // Skip the opcode if the register value is not equal to the byte stored in the instruction
+            0x4 => {
+                let reg_value = self.registers[opcode.x as usize];
+                if reg_value != opcode.nn {
+                    self.skip_next_opcode = true
+                }
+            }
+
+            // Skip the opcode if the register x and register y are equal
+            0x5 => {
+                let reg_x_value = self.registers[opcode.x as usize];
+                let reg_y_value = self.registers[opcode.y as usize];
+                if reg_x_value == reg_y_value {
                     self.skip_next_opcode = true
                 }
             }
